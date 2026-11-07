@@ -20,22 +20,29 @@ jobs:
           DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
         run: |
           python -c "
-          import requests, time, sys
+          import requests, time, sys, os
+          
+          # Correção 2: Lendo a variável de ambiente do jeito certo em Python
+          token = os.environ.get('DISCORD_TOKEN')
+          
+          if not token:
+              print('❌ Erro: DISCORD_TOKEN nao encontrado no GitHub Secrets.')
+              sys.exit(1)
           
           headers = {
-              'Authorization': '$DISCORD_TOKEN',
+              'Authorization': token,
               'Content-Type': 'application/json',
               'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
           }
           
           print('Buscando as missoes ativas na sua conta...')
           try:
-              # Pega a lista oficial de missões da conta do usuário usando o link correto da API
+              # Correção 1: Usando a URL oficial da API do Discord para Quests
               r = requests.get('https://discord.com', headers=headers)
               if r.status_code != 200:
-                  print(f'Erro ao conectar no Discord. Status: {r.status_code}. Verifique se seu token esta correto.')
+                  print(f'Erro ao conectar no Discord. Status: {r.status_code}. Verifique seu token.')
                   sys.exit(1)
-              quests = r.json().get('quests', [])
+              quests = r.json()
           except Exception as e:
               print('Erro ao buscar as missoes:', e)
               sys.exit(1)
@@ -49,7 +56,7 @@ jobs:
               
           print(f'Encontradas {len(active_quests)} missao(oes) para concluir.')
           
-          # Inicia todas as missões ao mesmo tempo com o link de start correto
+          # Inicia todas as missões ao mesmo tempo com as URLs corretas da API
           for q in active_quests:
               q_id = q['id']
               start_url = f'https://discord.com/{q_id}/start'
