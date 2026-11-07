@@ -1,0 +1,73 @@
+name: Concluir Todas as Missoes
+
+on:
+  workflow_dispatch:
+
+jobs:
+  complete-all:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configurar o Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Instalar Requests
+        run: pip install requests
+
+      - name: Executar o Multi-Quest Completer
+        env:
+          DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+        run: |
+          python -c "
+          import requests, time, sys
+          
+          headers = {
+              'Authorization': '$DISCORD_TOKEN',
+              'Content-Type': 'application/json',
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+          }
+          
+          print('Buscando as missoes ativas na sua conta...')
+          try:
+              # Pega a lista oficial de missões da conta do usuário
+              r = requests.get('https://discord.com', headers=headers)
+              if r.status_code != 200:
+                  print(f'Erro ao conectar no Discord. Status: {r.status_code}. Verifique se seu token esta correto.')
+                  sys.exit(1)
+              quests = r.json()
+          except Exception as e:
+              print('Erro ao buscar as missoes:', e)
+              sys.exit(1)
+          
+          # Filtra apenas as missões que ainda não foram concluídas
+          active_quests = [q for q in quests if 'completed_at' not in q or q['completed_at'] is None]
+          
+          if not active_quests:
+              print('Nenhuma missao pendente encontrada na sua conta!')
+              sys.exit(0)
+              
+          print(f'Encontradas {len(active_quests)} missao(oes) para concluir.')
+          
+          # Inicia todas as missões ao mesmo tempo
+          for q in active_quests:
+              q_id = q['id']
+              start_url = f'https://discord.com/{q_id}/start'
+              requests.post(start_url, headers=headers)
+              print(f'-> Ativando simulacao para a Quest ID: {q_id}')
+          
+          print('\n=== Mantendo transmissao ativa por 18 minutos ===')
+          for minuto in range(1, 19):
+              print(f'Tempo decorrido: {minuto} minuto(s)...')
+              for q in active_quests:
+                  q_id = q['id']
+                  hb_url = f'https://discord.com/{q_id}/heartbeat'
+                  try:
+                      requests.post(hb_url, headers=headers, json={'progress': minuto * 60})
+                  except:
+                      pass
+              time.sleep(60)
+              
+          print('\n=== SUCESSO! PROCESSO FINALIZADO! ===')
+          print('Abra seu aplicativo do Discord no celular e resgate seus premios!')
+          "
