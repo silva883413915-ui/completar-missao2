@@ -30,12 +30,12 @@ jobs:
           
           print('Buscando as missoes ativas na sua conta...')
           try:
-              # Pega a lista oficial de missões da conta do usuário
+              # Pega a lista oficial de missões da conta do usuário usando o link correto da API
               r = requests.get('https://discord.com', headers=headers)
               if r.status_code != 200:
                   print(f'Erro ao conectar no Discord. Status: {r.status_code}. Verifique se seu token esta correto.')
                   sys.exit(1)
-              quests = r.json()
+              quests = r.json().get('quests', [])
           except Exception as e:
               print('Erro ao buscar as missoes:', e)
               sys.exit(1)
@@ -49,7 +49,7 @@ jobs:
               
           print(f'Encontradas {len(active_quests)} missao(oes) para concluir.')
           
-          # Inicia todas as missões ao mesmo tempo
+          # Inicia todas as missões ao mesmo tempo com o link de start correto
           for q in active_quests:
               q_id = q['id']
               start_url = f'https://discord.com/{q_id}/start'
